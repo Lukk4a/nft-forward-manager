@@ -1,0 +1,11 @@
+{
+  "interface": "eth0",
+  "snat_ip": "192.0.2.10",
+  "protected_tcp_ports": [22, 30012],
+  "rules": [
+    {"name": "jp-direct", "listen_port": 60001, "protocol": "both", "target_ip": "198.51.100.10", "target_port": 58794},
+    {"name": "jp-relay-1", "listen_port": 60002, "protocol": "both", "target_ip": "198.51.100.10", "target_port": 61001},
+    {"name": "hk-relay", "listen_port": 60003, "protocol": "both", "target_ip": "198.51.100.20", "target_port": 61003},
+    {"name": "jp-relay-2", "listen_port": 60004, "protocol": "both", "target_ip": "198.51.100.10", "target_port": 61002}
+  ]
+}

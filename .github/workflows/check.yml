@@ -1,0 +1,41 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline behavior and installation tests
+        run: python3 -B -m unittest discover -p 'test_*.py' -v
+      - name: Install nftables for isolated kernel validation
+        run: sudo apt-get update && sudo apt-get install -y nftables
+      - name: Check create and replacement transactions in an isolated network namespace
+        run: |
+          python3 - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location('m', 'po0-nft-forward.py')
+          m = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          Path('/tmp/po0-test.nft').write_text(m.transaction(m.render(m.load(Path('tests/fixture.json')))))
+          PY
+          sudo unshare --net sh -eu -c '
+            nft add table inet unrelated
+            nft -c -f /tmp/po0-test.nft
+            nft -f /tmp/po0-test.nft
+            nft -c -f /tmp/po0-test.nft
+            nft -f /tmp/po0-test.nft
+            nft list table inet unrelated
+            nft list table ip po0_forwarding
+          '
+      - name: Build release artifacts
+        run: python3 build_release.py
